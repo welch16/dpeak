@@ -1,0 +1,10 @@
+useDynLib(dpeak,.registration=TRUE)
+exportPattern("^[[:alpha:]]+")
+
+import( methods, graphics, Rcpp, MASS, IRanges )
+
+export( dpeakRead, dpeakFit )
+
+export( show, plot, print, printEmpty )
+
+export( export )

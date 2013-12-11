@@ -1,0 +1,242 @@
+% -*- mode: noweb; noweb-default-code-mode: R-mode; -*-
+\documentclass[11pt]{article}
+%% Set my margins
+\setlength{\oddsidemargin}{0.0truein}
+\setlength{\evensidemargin}{0.0truein}
+\setlength{\textwidth}{6.5truein}
+\setlength{\topmargin}{0.0truein}
+\setlength{\textheight}{9.0truein}
+\setlength{\headsep}{0.0truein}
+\setlength{\headheight}{0.0truein}
+\setlength{\topskip}{0pt}
+%% End of margins
+
+%%\pagestyle{myheadings}
+%%\markboth{$Date$\hfil$Revision$}{\thepage}
+\usepackage[pdftex,
+bookmarks, 
+bookmarksopen,
+pdfauthor={Dongjun Chung and Sunduz Keles},
+pdftitle={dpeak Vignette}]
+{hyperref}
+
+\title{Identification of Protein Binding Sites at High Resolution with `\texttt{dpeak}' Package}
+\author{Dongjun Chung$^1$ and S\"und\"uz Kele\c{s}$^{1,2}$\\
+  $^1$Department of Statistics, University of Wisconsin\\ 
+  Madison, WI 53706.\\
+  $^2$Department of Biostatistics and Medical Informatics, 
+  University of Wisconsin\\Madison, WI 53706.}
+
+\date{\today}
+
+\SweaveOpts{engine=R, echo=TRUE, pdf=TRUE}
+
+\begin{document}
+%\VignetteIndexEntry{dPeak}
+%\VignetteKeywords{dPeak}
+%\VignettePackage{dpeak}
+\maketitle
+
+\section{Overview}
+
+This vignette provides an introduction to the `\texttt{dpeak}' package. 
+The `\texttt{dpeak}' package implements \texttt{dPeak}, a parametric mixture modeling approach 
+to identify protein binding sites in each of given peak regions at high spatial resolution.
+
+The package can be loaded with the command:
+
+<<preliminaries,echo=FALSE,results=hide>>=
+options(prompt = "R> ")
+@
+
+<<dpeak-prelim>>=
+library("dpeak")
+@
+
+\section{Workflow}
+
+\subsection{Reading Peak List and Aligned Reads into the R Environment}
+
+We assume that you already have a peak list and 
+the corresponding aligned read file for your ChIP sample.
+The peak list and aligned reads can be imported to the R environment with the command:
+
+<<dpeakread,eval=FALSE>>=
+exampleData <- dpeakRead( peakfile="examplePeak.txt", readfile="exampleSETRead.txt", 
+    fileFormat="eland_result", PET=FALSE, fragLen=150 )
+@
+
+<<dpearead-saved,echo=FALSE>>=
+data(exampleData)
+@
+
+You can specify the names of the peak list and the aligned read file 
+in arguments `\texttt{peakfile}' and `\texttt{readfile}', respectively.
+`\texttt{dpeakRead}' method assumes that first three columns of the peak list file
+are chromosome ID, start and end positions of each peak region.
+The peak list file should not include header.
+Standard BED file format satisfies these requirements.
+
+The `\texttt{PET}' argument indicates whether the aligned read data is 
+single-end tag (SET) or paired-end tag (PET) data.
+File format of the aligned read file can be specified in `\texttt{fileFormat}'.
+For SET data (`\texttt{PET=FALSE}'),
+`\texttt{dpeakRead}' method allows the following aligned read file formats:
+Eland result (`\texttt{"eland}$\_$\texttt{result"}'), 
+Eland extended (`\texttt{"eland}$\_$\texttt{extended"}'),
+Eland export (`\texttt{"eland}$\_$\texttt{export"}'), 
+default Bowtie (`\texttt{"bowtie"}'), 
+SAM (`\texttt{"sam"}'), and BED (`\texttt{"bed"}').
+For PET data (`\texttt{PET=TRUE}'), only eland result file format 
+(`\texttt{"eland}$\_$\texttt{result"}') is supported.
+For SET data, you might also want to specify average fragment length 
+in the `\texttt{fragLen}' argument (default is 200 bp). 
+The `\texttt{fragLen}' argument is not relevant when `\texttt{PET=FALSE}' (PET data).
+
+R package `\texttt{dpeak}' provides functions for generating simple summaries
+of the data. The following command prints out basic information,
+such as number of peaks, number of chromosomes in the data,
+tag type (SET or PET), number of utilized reads,
+and median number of reads in each peak.
+In addition, for PET data, median fragment length is also provided
+(for SET data, average fragment length provided by user will be printed out).
+    
+<<dpeakdata-show>>=
+exampleData
+@
+
+`\texttt{plot}' method exports exploratory plots for the ChIP data to a PDF file. 
+Its file name needs to be specified in the `\texttt{filename}' argument. 
+These plots show number of reads (or fragments) aligned to each position within each peak region.
+For SET data, if `\texttt{strand=TRUE}', reads are plotted in a strand-specific manner,
+where each read is extended to the value specified 
+in the `\texttt{extension}' argument from its 5' end.
+Moreover, if `\texttt{smoothing=TRUE}', 
+a smoothed plot (using the smoothing spline) is provided.
+Unsmoothed plot is provided by default.
+
+<<dpeakdata-plot,eval=FALSE>>=
+plot( exampleData, filename="examplePlot_combined.pdf", 
+	strand=FALSE )
+plot( exampleData, filename="examplePlot_strand_1.pdf", 
+	strand=TRUE, extension=1, smoothing=TRUE )
+@
+
+Figures \ref{fig:bindata-plot-combined} and \ref{fig:bindata-plot-strand} display
+examples of the data plot without strand information and 
+the strand-specific data plot, respectively.
+
+\begin{figure}[tbh]
+\begin{center}
+\includegraphics[scale=0.30,angle=0]{dataplot_combined}
+\caption{\label{fig:bindata-plot-combined} \texttt{Data plot.}
+Height at each position indicates the number of fragments aligned to the position.
+In SET data, fragments are defined as reads extended to average fragment length.}
+\end{center}
+\end{figure}
+
+\begin{figure}[tbh]
+\begin{center}
+\includegraphics[scale=0.30,angle=0]{dataplot_strand}
+\caption{\label{fig:bindata-plot-strand} \texttt{Strand-specific data plot.}
+Height at each position indicates the number of 5' end of reads aligned to the position.}
+\end{center}
+\end{figure}
+
+\subsection{Identifying Binding Sites}
+
+We can now fit a dPeak model using the imported data (\texttt{exampleData}) with the command:
+
+<<dpeakfit>>=
+exampleFit <- dpeakFit( exampleData, maxComp=5, nCore=8 )
+@
+
+`\texttt{dpeakFit}' fits models with at most `\texttt{maxComp}' binding events for each peak
+and chooses the best model among them for each peak,
+based on Bayesian Information Criterion (BIC) values.
+If `\texttt{multicore}' package is installed,
+parallel computing can be utilized and multiple number of peaks are analyzed simultaneously.
+You can specify number of utilized CPUs in `\texttt{nCore}' (default: 8).
+The following command prints out a basic summary of the fitted model,
+such as median number of binding events in each peak region.
+
+<<dpeakfit-show>>=
+exampleFit
+@
+
+`\texttt{plot}' method exports the plots of estimated binding sites (`\texttt{plotType="fit"}')
+or the goodness of fit (GOF) plots (`\texttt{plotType="GOF"}') to a PDF file.
+Its file name needs to be specified in the `\texttt{filename}' argument. 
+In both of these plots, estimated binding sites or simulated fragments are superimposed on 
+the plots of reads (or fragments) aligned to each position
+(such as figures \ref{fig:bindata-plot-combined} and \ref{fig:bindata-plot-strand}).
+For SET data, if `\texttt{plotType="fit"}' and `\texttt{strand=TRUE}',
+reads will be plotted in a strand-specific manner,
+where each read is extended to `\texttt{extension}' from its 5' end.
+If `\texttt{smoothing=TRUE}', a smoothed plot (using the smoothing spline) is provided.
+Unsmoothed plot is provided by default.
+
+<<dpeakfit-plot,eval=FALSE>>=
+plot( exampleFit, filename="exampleResult_combined.pdf" )
+plot( exampleFit, filename="exampleResult_strand_1.pdf", 
+	strand=TRUE, extension=1, smoothing=TRUE )
+plot( exampleFit, filename="exGOF.pdf", plotType="GOF" )
+@
+
+Figures \ref{fig:dpeakfit-fit-combined-plot} and \ref{fig:dpeakfit-fit-strand-plot}
+display examples of plots of estimated binding sites.
+Estimated binding sites (blue vertical dashed lines) are superimposed on the data plot.
+Figure \ref{fig:dpeakfit-GOF-plot} shows an example of the GOF plot
+and it indicates that the model fits the data quite well.
+
+\begin{figure}[tbh]
+\begin{center}
+\includegraphics[scale=0.30,angle=0]{resultplot_combined}
+\caption{\label{fig:dpeakfit-fit-combined-plot} 
+\texttt{Plot of estimated binding sites.}
+Height at each position indicates the number of fragments aligned to the position.
+In SET data, fragments are defined as reads extended to average fragment length.
+Blue vertical dashed lines indicate estimated binding sites.
+}
+\end{center}
+\end{figure}
+
+\begin{figure}[tbh]
+\begin{center}
+\includegraphics[scale=0.30,angle=0]{resultplot_strand}
+\caption{\label{fig:dpeakfit-fit-strand-plot} 
+\texttt{Strand-specific plot of estimated binding sites.}
+Height at each position indicates the number of 5' end of reads aligned to the position.
+Blue vertical dashed lines indicate estimated binding sites.
+}
+\end{center}
+\end{figure}
+
+\begin{figure}[tbh]
+\begin{center}
+\includegraphics[scale=0.30,angle=0]{GOF}
+\caption{\label{fig:dpeakfit-GOF-plot} Goodness of Fit (GOF) plot. }
+\end{center}
+\end{figure}
+
+You can export the binding site identification results to text files. 
+Name of the file to be exported needs to be specified in the `\texttt{filename}' argument.
+`\texttt{dpeak}' package supports TXT, BED, and GFF file formats.
+In the exported file, TXT file format (`\texttt{type="txt"}') includes 
+chromosome ID, binding site, relative binding strength in each peak region,
+and the peak region that each binding event belongs to.
+`\texttt{type="bed"}' and `\texttt{type="gff"}' export 
+binding site identification results in standard BED and GFF file formats, respectively, 
+where score is the estimated binding strength multiplied by 1000. 
+The feature of GFF file and the name of BED file indicate 
+the peak region that each binding event belongs to.
+Peak calling results can be exported in TXT, BED, and GFF file formats,
+respectively, by the commands:
+
+<<dpeakfit-export>>=
+export( exampleFit, type="txt", filename="result.txt" )
+export( exampleFit, type="bed", filename="result.bed" )
+export( exampleFit, type="gff", filename="result.gff" )
+@
+
+\end{document}
