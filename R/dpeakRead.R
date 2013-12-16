@@ -41,7 +41,12 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     # - peak set: assume that first 3 columns of both files are chr, start, end
     
     message( "Info: Reading peak list..." )
-    peakSet <- read.table( peakfile, header=FALSE, stringsAsFactors=FALSE )
+    if( is(peakfile, "GRanges") ){
+        peakSet <- as(peakfile, "data.frame")
+        peakSet <- within( peakSet, seqnames <- as(seqnames, "character"))
+      }else{
+        peakSet <- read.table( peakfile, header=FALSE, stringsAsFactors=FALSE )
+      }
     nPeak <- nrow(peakSet)
     gc()
     #print( Sys.time() )
