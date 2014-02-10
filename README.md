@@ -13,3 +13,5 @@ References
 ==========
 
 Chung D, Park D, Myers K, Grass J, Kiley P, Landick R, and Keles S (2013), "dPeak: High resolution identification of transcription factor binding sites from PET and SET ChIP-Seq data," _PLoS Computational Biology_, 9(10): e1003246.
+
+Chung D, Ong I, Grass J, Landick R, Kiley P, and Keles S (2013). "High resolution identification of protein-DNA binding events using ChIP-exo data with dPeak." (in preparation) 
