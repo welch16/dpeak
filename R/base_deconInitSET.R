@@ -1,9 +1,10 @@
 # Initial value for deconvolution, based on the heuristic EM algorithm
 
 .deconInitSET <- function( S, E, strand, peak, 
-    estDelta=TRUE, lbDelta=25, lbSigma=25,
+    estDeltaSigma="common", lbDelta=25, lbSigma=25,
     psize=21, Fratio=0.5, sindex, beta,
-    niter=50, mu_init, L_table, stop_eps=1e-6, verbose=FALSE ) {
+    niter=50, mu_init, delta_init, sigma_init, 
+	L_table, stop_eps=1e-6, verbose=FALSE ) {
     
     # initialization
   
@@ -20,10 +21,10 @@
     mu <- mu_init  
     pi <- rep( 0.90/n_group, n_group )
     pi0 <- 0.10
+    delta <- delta_init
+    sigma <- sigma_init
     
     fraglen <- E[1] - S[1] + 1
-    delta <- fraglen / 2
-    sigma <- delta / 2
     
     R <- grid_max - grid_min + 1    
   
@@ -147,61 +148,64 @@
 		    
 		    next;
         }
+		
+		# M step: update delta & sigma, if common peak shape is not used
+		
+		if ( estDeltaSigma == "separate" ) {
         
-        # M step: update delta
-    
-        if ( estDelta == TRUE ) {
-            delta <- 0
-            
-            for ( g in 1:n_group ) {
-                if ( gmat[ (g+1), 2] > 0 ) {
-                    indg <- gbinary[[ as.character(g) ]]
-                } else {
-                    indg <- rep( 0, N )
-                }
-                
-                if ( sum(indg) > 0 ) {
-                    delta <- delta + 
-                        sum( ( ( mu[g] - S ) * indF * indg ) + ( ( E - mu[g] ) * indR * indg ) )
-                }
-            }
-            
-            delta <- delta / N
-        }
-        
-        # M step: update sigma
-        
-        sigma2 <- 0
-        
-        for ( g in 1:n_group ) {
-            if ( gmat[ (g+1), 2] > 0 ) {
-                indg <- gbinary[[ as.character(g) ]]
-            } else {
-                indg <- rep( 0, N )
-            }
-            
-            if ( sum(indg) > 0 ) {
-                sigma2 <- sigma2 + sum( ( ( S - mu[g] + delta )^2 * indF * indg ) + 
-                    ( ( E - mu[g] - delta )^2 * indR *indg ) )
-            }
-        }
-        
-        sigma <- sqrt( sigma2 / N )
-        
-        # safe guard for delta & sigma
-        
-        #if ( delta < 25 ) {
-        #    delta <- 25
-        #}
-        #if ( sigma < 25 ) {
-        #    sigma <- 25
-        #}
-        if ( delta < lbDelta ) {
-            delta <- lbDelta
-        }
-        if ( sigma < lbSigma ) {
-            sigma <- lbSigma
-        }
+			# M step: update delta
+		
+			delta <- 0
+			
+			for ( g in 1:n_group ) {
+				if ( gmat[ (g+1), 2] > 0 ) {
+					indg <- gbinary[[ as.character(g) ]]
+				} else {
+					indg <- rep( 0, N )
+				}
+				
+				if ( sum(indg) > 0 ) {
+					delta <- delta + 
+						sum( ( ( mu[g] - S ) * indF * indg ) + ( ( E - mu[g] ) * indR * indg ) )
+				}
+			}
+			
+			delta <- delta / N
+			
+			# M step: update sigma
+			
+			sigma2 <- 0
+			
+			for ( g in 1:n_group ) {
+				if ( gmat[ (g+1), 2] > 0 ) {
+					indg <- gbinary[[ as.character(g) ]]
+				} else {
+					indg <- rep( 0, N )
+				}
+				
+				if ( sum(indg) > 0 ) {
+					sigma2 <- sigma2 + sum( ( ( S - mu[g] + delta )^2 * indF * indg ) + 
+						( ( E - mu[g] - delta )^2 * indR *indg ) )
+				}
+			}
+			
+			sigma <- sqrt( sigma2 / N )
+			
+			# safe guard for delta & sigma
+			
+			#if ( delta < 25 ) {
+			#    delta <- 25
+			#}
+			#if ( sigma < 25 ) {
+			#    sigma <- 25
+			#}
+			if ( delta < lbDelta ) {
+				delta <- lbDelta
+			}
+			if ( sigma < lbSigma ) {
+				sigma <- lbSigma
+			}
+		}
         
         # merge nearby mu
         

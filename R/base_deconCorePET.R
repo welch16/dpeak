@@ -56,20 +56,23 @@
         muRange <- IRanges( start=mu, end=mu )
         mm <- as.matrix( findOverlaps( muRange, fragRange ) )
         mms <- split( mm[,2], mm[,1] )
-        indg_list <- lapply( mms, function(x) {
-            out <- rep( 0, N )
-            out[x] <- 1
-            return(out)
-        } )
+        #indg_list <- lapply( mms, function(x) {
+        #    out <- rep( 0, N )
+        #    out[x] <- 1
+        #    return(out)
+        #} )
         
         Z <- matrix( NA, N, n_group )
         for ( g in 1:n_group ) {
             if ( any( names(mms) == g ) ) { 
-                indg <- indg_list[[ as.character(g) ]]
+                #indg <- indg_list[[ as.character(g) ]]
+				Z[ , g ] <- pi[g] * ( gamma / (R-1) )
+				Z[ mms[[ as.character(g) ]], g ] <- pi[g] * ( ( 1 - gamma ) / L )
             } else {
-                indg <- rep( 0, N )
+                #indg <- rep( 0, N )
+				Z[,g] <- gamma / (R-1)
             }
-            Z[,g] <- pi[g] * ( ( ( 1 - gamma ) / L )*indg + ( gamma / (R-1) )*( 1 - indg ) )
+            #Z[,g] <- pi[g] * ( ( ( 1 - gamma ) / L )*indg + ( gamma / (R-1) )*( 1 - indg ) )
             
             # check at least one element in Z[,g] is non-zero
             
@@ -121,7 +124,8 @@
             
         # M step: update pi 
         
-        pi <- apply( Z, 2, sum ) / N
+        #pi <- apply( Z, 2, sum ) / N
+		pi <- colSums(Z) / N
         pi0 <- sum(Z0) / N
         
         # safe guard for pi0: when signal is weak, do not use pi0
@@ -136,21 +140,23 @@
         muRange <- IRanges( start=mu, end=mu )
         mm <- as.matrix( findOverlaps( muRange, fragRange ) )
         mms <- split( mm[,2], mm[,1] )
-        indg_list <- lapply( mms, function(x) {
-            out <- rep( 0, N )
-            out[x] <- 1
-            return(out)
-        } )
+        #indg_list <- lapply( mms, function(x) {
+        #    out <- rep( 0, N )
+        #    out[x] <- 1
+        #    return(out)
+        #} )
         
         gamma <- 0
         for ( g in 1:n_group ) {
             #indg <- as.numeric( S <= mu[g] & mu[g] <= E )
             if ( any( names(mms) == g ) ) { 
-                indg <- indg_list[[ as.character(g) ]]
+                #indg <- indg_list[[ as.character(g) ]]
+				gamma <- gamma + sum( Z[ -mms, g ] )
             } else {
-                indg <- rep( 0, N )
+                #indg <- rep( 0, N )
+				gamma <- gamma + sum( Z[ , g ] )
             }
-            gamma <- gamma + sum( Z[,g] * ( 1 - indg ) )
+            #gamma <- gamma + sum( Z[,g] * ( 1 - indg ) )
         }
         gamma <- gamma / N
         

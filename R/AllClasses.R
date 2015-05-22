@@ -20,6 +20,19 @@ setClass( Class="DpeakData",
     )
 )
 
+# Dpeak motif class
+
+setClass( Class="DpeakMotif",
+    representation=representation(
+        motif="character",
+        locMotif="list",
+        
+        peakChr="character",
+        peakStart="numeric",
+        peakEnd="numeric"
+    )
+)
+
 # Dpeak fit class
 
 setClass( Class="DpeakFit",
@@ -48,7 +61,8 @@ setClass( Class="DpeakFit",
         peakStart="numeric",
         peakEnd="numeric",
         
-        estDelta="logical",
+        estDeltaSigma="character",
+		nTop="numeric",
         lbDelta="numeric",
         lbSigma="numeric",
         psize="numeric",

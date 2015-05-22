@@ -1,10 +1,10 @@
 # Deconvolution, based on the generative model
 
 .deconCoreSET <- function( S, E, strand, peak, 
-    estDelta=TRUE, lbDelta=25, lbSigma=25,
+    estDeltaSigma="common", lbDelta=25, lbSigma=25,
     psize=21, Fratio=0.5, sindex, beta,
     niter=50, mu_init, pi_init, pi0_init, delta_init, sigma_init,
-    PET=TRUE, L_table, stop_eps=1e-6, verbose=FALSE ) {  
+    L_table, stop_eps=1e-6, verbose=FALSE ) {  
   
     # construct grid  
     
@@ -107,44 +107,47 @@
             pi <- pi / sum(pi)
         }
         
-        # M step: update delta
-    
-        if ( estDelta == TRUE ) {
-            delta <- 0
-            
-            for ( g in 1:n_group ) {
-                delta <- delta + 
-                    sum( Z[,g] * ( ( mu[g] - S ) * indF + ( E - mu[g] ) * indR ) )
-            }
-            
-            delta <- delta / N
-        }
-        
-        # M step: update sigma
-        
-        sigma2 <- 0
-        
-        for ( g in 1:n_group ) {
-            sigma2 <- sigma2 + sum( Z[,g] * ( ( S - mu[g] + delta )^2 * indF + 
-                ( E - mu[g] - delta )^2 * indR ) )
-        }
-        
-        sigma <- sqrt( sigma2 / N )
-        
-        # safe guard for delta & sigma
-        
-        #if ( delta < 25 ) {
-        #    delta <- 25
-        #}
-        #if ( sigma < 25 ) {
-        #    sigma <- 25
-        #}
-        if ( delta < lbDelta ) {
-            delta <- lbDelta
-        }
-        if ( sigma < lbSigma ) {
-            sigma <- lbSigma
-        }
+		# M step: update delta & sigma, if common peak shape is not used
+		
+		if ( estDeltaSigma == "separate" ) {
+			
+			# M step: update delta
+			
+			delta <- 0
+				
+			for ( g in 1:n_group ) {
+				delta <- delta + 
+					sum( Z[,g] * ( ( mu[g] - S ) * indF + ( E - mu[g] ) * indR ) )
+			}
+			
+			delta <- delta / N
+			
+			# M step: update sigma
+			
+			sigma2 <- 0
+			
+			for ( g in 1:n_group ) {
+				sigma2 <- sigma2 + sum( Z[,g] * ( ( S - mu[g] + delta )^2 * indF + 
+					( E - mu[g] - delta )^2 * indR ) )
+			}
+			
+			sigma <- sqrt( sigma2 / N )
+			
+			# safe guard for delta & sigma
+			
+			#if ( delta < 25 ) {
+			#    delta <- 25
+			#}
+			#if ( sigma < 25 ) {
+			#    sigma <- 25
+			#}
+			if ( delta < lbDelta ) {
+				delta <- lbDelta
+			}
+			if ( sigma < lbSigma ) {
+				sigma <- lbSigma
+			}
+		}
         
         ########################################################################
         #                                                                      #

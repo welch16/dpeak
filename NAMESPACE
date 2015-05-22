@@ -1,9 +1,10 @@
-useDynLib(dpeak,.registration=TRUE)
+useDynLib(dpeak)
 exportPattern("^[[:alpha:]]+")
+importFrom( Rcpp, evalCpp )
 
-import( methods, graphics, Rcpp, MASS, IRanges )
+import( methods, graphics, MASS, IRanges, BSgenome )
 
-export( dpeakRead, dpeakFit )
+export( dpeakRead, dpeakMotif, dpeakFit )
 
 export( show, plot, print, printEmpty )
 

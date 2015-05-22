@@ -4,10 +4,27 @@
 setMethod(
     f="dpeakFit",
     signature="DpeakData",
-    definition=function( object, estDelta=TRUE, lbDelta=25, lbSigma=25,
+    definition=function( object, objectMotif=NULL, estDeltaSigma="common", init="localmax",
+		nTop=100, lbDelta=25, lbSigma=25,
         psize=21, maxComp=5, pConst=0.2, 
         nCore=8, verbose=FALSE, seed=12345, iterInit=50, iterMain=25, epsilon=1e-6 )
     {    
+		# use motif information for initialization?
+		
+		if ( !is.null(objectMotif) ) {
+			message( "Info: positions of binding events are initialized using sequence information." )
+		}
+		
+		# how to initialize binding events
+		
+		if ( init == "localmax" ) {
+			message( "Info: positions of binding events are initialized based on signal strength." )
+		} else if ( init == "uniform" ) {
+			message( "Info: positions of binding events are initialized uniformly over the candidate region." )
+		} else {
+			stop( "Inappropriate 'init' argument! It should be either 'localmax' or 'uniform'." )
+		}
+		
         # safe guard: iterInit, iterMain
         
         if ( iterInit < 2 ) {
@@ -19,15 +36,15 @@ setMethod(
             iterMain <- 2
         }
         
-        # safe guard: estDelta
+        # safe guard: estDeltaSigma
         
         if ( object@PET == FALSE ) {
-            if ( estDelta == TRUE ) {
-                message( "Info: estimate optimal fragment length for each peak." )
-            } else if ( estDelta == FALSE ) {
-                message( "Info: use average fragment length for all peaks." )
+            if ( estDeltaSigma == "separate" ) {
+                message( "Info: estimate peak shape for each candidate region, separately." )
+            } else if ( estDeltaSigma == "common" ) {
+                message( "Info: estimate common peak shape using top candidate regions." )
             } else {
-                stop( "Inappropriate 'estDelta' argument!" )
+                stop( "Inappropriate 'estDeltaSigma' argument!" )
             }
         }
         
@@ -70,7 +87,85 @@ setMethod(
             aveFragLen <- object@aveFragLen
         }
         Fratio <- object@Fratio
+		
+		# estimation of common peak shape
+		
+		if ( estDeltaSigma == "common" ) {
+		
+			# choose top candidate regions
+			
+			nread <- sapply( object@fragSet, nrow )
+			nTopFinal <- min( nTop, length(nread) )
+			nreadCutoff <- sort( nread, decreasing=TRUE )[ nTopFinal ]
         
+			dataObj <- vector( "list", nTopFinal )
+			selvec <- which( nread >= nreadCutoff )
+			for ( i in 1:length(selvec) ) {
+				isel <- selvec[i]
+				
+				dataObj[[i]] <- list()
+				dataObj[[i]]$frag <- object@fragSet[[isel]]
+				dataObj[[i]]$peak <- c( object@peakStart[isel], object@peakEnd[isel] )
+				dataObj[[i]]$signal <- object@stackedFragment[[isel]]
+			
+				if ( !is.null(objectMotif) ) {
+					dataObj[[i]]$locmotif <- objectMotif@locMotif[[isel]]
+				} else {
+					dataObj[[i]]$locmotif <- NA
+				}
+			}
+			
+			# deconvolve top candidate regions (using parallel computing, if parallel exists)
+			
+			if ( is.element( "parallel", installed.packages()[,1] ) ) {
+				# if "parallel" package exists, utilize parallel computing with "mclapply"
+				library(parallel)
+				
+				fit_top <- mclapply( dataObj, function(x) { 
+					.deconWrapper( fData=x, estDeltaSigma="separate", init=init, 
+						deltaInit=NA, sigmaInit=NA, lbDelta=lbDelta, lbSigma=lbSigma,
+						psize=psize, max_comp=maxComp, pConst=pConst,
+						seed=seed, niter_init=iterInit, niter_gen=iterMain, 
+						PET=PET, L_table=L_table, Fratio=Fratio, aveFragLen=aveFragLen,
+						stop_eps=epsilon, verbose=verbose ) 
+					}, mc.cores = nCore )
+			} else {
+				# otherwise, use usual "lapply"
+				
+				fit_top <- lapply( dataObj, function(x) { 
+					.deconWrapper( fData=x, estDeltaSigma="separate", init=init,  
+						deltaInit=NA, sigmaInit=NA, lbDelta=lbDelta, lbSigma=lbSigma,
+						psize=psize, max_comp=maxComp, pConst=pConst,
+						seed=seed, niter_init=iterInit, niter_gen=iterMain, 
+						PET=PET, L_table=L_table, Fratio=Fratio, aveFragLen=aveFragLen,
+						stop_eps=epsilon, verbose=verbose ) 
+					} )
+			}    
+			
+			# estimate common delta & sigma
+			
+			deltaCommon <- sigmaCommon <- ntotal <- 0
+			
+			for ( itop in 1:nTopFinal ) {
+				ni <- nrow(dataObj[[itop]]$frag)
+				
+				deltaCommon <- deltaCommon + fit_top[[itop]]$optDelta * ni
+				sigmaCommon <- sigmaCommon + fit_top[[itop]]$optSigma * ni	
+				ntotal <- ntotal + ni
+			}
+			
+			deltaCommon <- deltaCommon / ntotal
+			sigmaCommon <- sigmaCommon / ntotal
+			
+			rm( dataObj )
+			gc()
+			
+        } else if ( estDeltaSigma == "separate" ) {
+			
+			deltaCommon <- NA
+			sigmaCommon <- NA
+		}
+		
         # construct object for model fitting
         
         dataObj <- vector( "list", length(object@fragSet) )
@@ -78,6 +173,13 @@ setMethod(
             dataObj[[i]] <- list()
             dataObj[[i]]$frag <- object@fragSet[[i]]
             dataObj[[i]]$peak <- c( object@peakStart[i], object@peakEnd[i] )
+			dataObj[[i]]$signal <- object@stackedFragment[[i]]
+			
+			if ( !is.null(objectMotif) ) {
+				dataObj[[i]]$locmotif <- objectMotif@locMotif[[i]]
+			} else {
+				dataObj[[i]]$locmotif <- NA
+			}
         }
         
         # deconvolve all peaks (using parallel computing, if parallel exists)
@@ -87,7 +189,8 @@ setMethod(
             library(parallel)
             
             fit_all <- mclapply( dataObj, function(x) { 
-                .deconWrapper( fData=x, estDelta=estDelta, lbDelta=lbDelta, lbSigma=lbSigma,
+                .deconWrapper( fData=x, estDeltaSigma=estDeltaSigma, init=init,  
+					deltaInit=deltaCommon, sigmaInit=sigmaCommon, lbDelta=lbDelta, lbSigma=lbSigma,
                     psize=psize, max_comp=maxComp, pConst=pConst,
                     seed=seed, niter_init=iterInit, niter_gen=iterMain, 
                     PET=PET, L_table=L_table, Fratio=Fratio, aveFragLen=aveFragLen,
@@ -97,7 +200,8 @@ setMethod(
             # otherwise, use usual "lapply"
             
             fit_all <- lapply( dataObj, function(x) { 
-                .deconWrapper( fData=x, estDelta=estDelta, lbDelta=lbDelta, lbSigma=lbSigma,
+                .deconWrapper( fData=x, estDeltaSigma=estDeltaSigma, init=init,  
+					deltaInit=deltaCommon, sigmaInit=sigmaCommon, lbDelta=lbDelta, lbSigma=lbSigma,
                     psize=psize, max_comp=maxComp, pConst=pConst,
                     seed=seed, niter_init=iterInit, niter_gen=iterMain, 
                     PET=PET, L_table=L_table, Fratio=Fratio, aveFragLen=aveFragLen,
@@ -147,7 +251,7 @@ setMethod(
             fragLenTable=object@fragLenTable, Fratio=object@Fratio,
             aveFragLen=object@aveFragLen, stackedFragment=object@stackedFragment,
             peakChr=object@peakChr, peakStart=object@peakStart, peakEnd=object@peakEnd,
-            estDelta=estDelta, lbDelta=lbDelta, lbSigma=lbSigma,
+            estDeltaSigma=estDeltaSigma, nTop=nTop, lbDelta=lbDelta, lbSigma=lbSigma,
             psize=psize, maxComp=maxComp, pConst=pConst,
             iterInit=iterInit, iterMain=iterMain, epsilon=epsilon )
     }

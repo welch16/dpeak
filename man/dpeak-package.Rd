@@ -13,8 +13,8 @@ a statistical framework to deconvolve ChIP-seq peaks.
 \tabular{ll}{
 Package: \tab dpeak\cr
 Type: \tab Package\cr
-Version: \tab 1.0.1\cr
-Date: \tab 2013-07-31\cr
+Version: \tab 2.0.1\cr
+Date: \tab 2014-09-15\cr
 License: \tab GPL (>= 2)\cr
 LazyLoad: \tab yes\cr
 }

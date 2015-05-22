@@ -54,9 +54,10 @@ Objects can be created by calls of the form \code{new("DpeakFit", ...)}.
         representing a vector of start position of each peak. }
     \item{\code{peakEnd}:}{Object of class \code{"numeric"},
         representing a vector of end position of each peak. }
-    \item{\code{estDelta}:}{Object of class \code{"logical"},
-        representing whether to estimate optimal read shift for each peak (\code{PET=TRUE})
-        or use average fragment length for all peaks (\code{PET=FALSE}). }
+    \item{\code{estDeltaSigma}:}{Object of class \code{"character"},
+        representing the approach to estimate delta and sigma parameters for SET data. }
+    \item{\code{nTop}:}{Object of class \code{"numeric"},
+        representing the number of candidate regions used to estimate common delta and sigma estimates. }
     \item{\code{lbDelta}:}{Object of class \code{"numeric"},
         representing a lower bound for the delta parameter. }
     \item{\code{lbSigma}:}{Object of class \code{"numeric"},

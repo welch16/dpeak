@@ -1,12 +1,15 @@
 # deconvolution
 
-.deconWrapper <- function( fData, estDelta=TRUE, lbDelta=c(25,25), lbSigma=c(25,25),
+.deconWrapper <- function( fData, estDeltaSigma="common", init="localmax",
+	deltaInit=NA, sigmaInit=NA, lbDelta=c(25,25), lbSigma=c(25,25),
     psize=21, max_comp=5, pConst=0.2,
     seed=12345, niter_init=25, niter_gen=25, 
     PET, L_table=NA, Fratio=0.5, aveFragLen=NA, stop_eps=1e-6, verbose=FALSE ) {
     
     frag <- fData$frag
     peak <- fData$peak
+	signal <- fData$signal
+	locmotif <- fData$locmotif
     
     if ( is.na(frag[1,1]) ) {
     #if ( nrow(frag) == 0 ) {
@@ -65,31 +68,120 @@
         BIC_vec <- AIC_vec <- rep( NA, max_comp )
         
         for ( n_comp in 1:max_comp ) {
-            # initial value: equal grid
-          
-            #mu_init <- seq( min((S+E)/2), max((S+E)/2), length=(n_comp+2) )
-            mu_init <- seq( min(midp), max(midp), length=(n_comp+2) )
-            mu_init <- mu_init[ -c(1,length(mu_init)) ]
-            
+            # initialization: motif -> signal -> uniform
+			
+			if ( !is.na(locmotif[1]) ) {
+				# initialize binding events using sequence information
+				
+				seqsignal <- signal[ match( locmotif, signal[,1] ), 2 ]
+				locmotif_ordered <- locmotif[ order( seqsignal, decreasing=TRUE ) ]
+				
+				if ( length(locmotif) >= n_comp ) {
+					mu_init <- locmotif_ordered[ 1:n_comp ]
+				} else {
+					# use other approaches if we don't have enough points
+				
+					if ( init == "localmax" ) {
+						# distribute binding events based on strength
+						
+						# identify local max
+						
+						initindex <- rep( 0, nrow(signal) )					
+						initindex[ c( 1:nrow(signal) ) %% psize == 0 ] <- 1
+						initindex <- cumsum(initindex)
+						signal_list <- split( as.data.frame(signal), initindex )
+						lmaxvec <- t(sapply( signal_list, function(x) unlist(x[ which.max(x[,2]), ]) ))
+						lmax_ordered <- lmaxvec[ order( lmaxvec[,2], decreasing=TRUE ), 1 ]
+						
+						# initialize binding events with local max
+						
+						if ( length(lmax_ordered) >= ( n_comp - length(locmotif) ) ) {
+							mu_init_plus <- lmax_ordered[ 1:( n_comp - length(locmotif) ) ]
+						} else {					
+							# use uniformly distribute binding events, if we don't have enough points
+							
+							mu_unif <- seq( min(midp), max(midp), length=( ( n_comp - length(locmotif) - length(lmax_ordered) ) + 2 ) )
+							mu_unif <- mu_unif[ -c(1,length(mu_unif)) ]
+							mu_init_plus <- c( lmax_ordered, mu_unif[ 1:( n_comp - length(locmotif) - length(lmax_ordered) ) ] )
+						}
+						
+						mu_init <- c( locmotif_ordered, mu_init_plus )
+					} else if ( init == "uniform" ) {
+						# uniformly distribute binding events
+					  
+						#mu_init <- seq( min((S+E)/2), max((S+E)/2), length=(n_comp+2) )
+						mu_init <- seq( min(midp), max(midp), length=(n_comp+2) )
+						mu_init <- mu_init[ -c(1,length(mu_init)) ]
+					}
+				}
+				
+				mu_init <- sort(mu_init)
+			} else {
+				# no sequence information
+				
+				if ( init == "localmax" ) {
+					# distribute binding events based on strength
+					
+					# identify local max
+					
+					initindex <- rep( 0, nrow(signal) )					
+					initindex[ c( 1:nrow(signal) ) %% psize == 0 ] <- 1
+					initindex <- cumsum(initindex)
+					signal_list <- split( as.data.frame(signal), initindex )
+					lmaxvec <- t(sapply( signal_list, function(x) unlist(x[ which.max(x[,2]), ]) ))
+					lmax_ordered <- lmaxvec[ order( lmaxvec[,2], decreasing=TRUE ), 1 ]
+					
+					# initialize binding events with local max
+					
+					if ( length(lmax_ordered) >= n_comp ) {
+						mu_init <- lmax_ordered[ 1:n_comp ]
+					} else {					
+						# use uniformly distribute binding events, if we don't have enough points
+						
+						mu_unif <- seq( min(midp), max(midp), length=( ( n_comp - length(lmax_ordered) ) + 2 ) )
+						mu_unif <- mu_unif[ -c(1,length(mu_unif)) ]
+						mu_init <- c( lmax_ordered, mu_unif[ 1:( n_comp - length(lmax_ordered) ) ] )
+					}
+				} else if ( init == "uniform" ) {
+					# uniformly distribute binding events
+				  
+					#mu_init <- seq( min((S+E)/2), max((S+E)/2), length=(n_comp+2) )
+					mu_init <- seq( min(midp), max(midp), length=(n_comp+2) )
+					mu_init <- mu_init[ -c(1,length(mu_init)) ]
+				}
+            }
+			
             # EM algorithm
             
             set.seed( seed + n_comp )
             
             if ( PET == FALSE ) {
                 # ---------------------------- SET ----------------------------
+							
+				if ( is.na(deltaInit) ) {
+					delta_init <- aveFragLen / 2
+				} else {
+					delta_init <- deltaInit
+				}
+				if ( is.na(sigmaInit) ) {
+					sigma_init <- delta_init / 2
+				} else {
+					sigma_init <- sigmaInit
+				}
                 
                 # SECM
                 
                 fit_init <- .deconInitSET( S=S, E=E, strand=strand, peak=peak, 
-                    estDelta=estDelta, lbDelta=lbDelta[1], lbSigma=lbSigma[1],
+                    estDeltaSigma=estDeltaSigma, lbDelta=lbDelta[1], lbSigma=lbSigma[1],
                     psize=psize, Fratio=Fratio, sindex=sindex,
                     beta=beta, niter=niter_init, mu_init=mu_init, 
+					delta_init=delta_init, sigma_init=sigma_init,
                     L_table=L_table, stop_eps=stop_eps, verbose=verbose )
                 
                 # ECM
                 
                 fit <- .deconCoreSET( S=S, E=E, strand=strand, peak=peak, 
-                    estDelta=estDelta, lbDelta=lbDelta[2], lbSigma=lbSigma[2],
+                    estDeltaSigma=estDeltaSigma, lbDelta=lbDelta[2], lbSigma=lbSigma[2],
                     psize=psize, Fratio=Fratio, sindex=sindex, 
                     beta=beta, niter=niter_gen, mu_init=fit_init$mu, 
                     pi_init=fit_init$pi, pi0_init=fit_init$pi0,
