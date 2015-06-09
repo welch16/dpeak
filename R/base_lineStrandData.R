@@ -2,7 +2,6 @@
 
 .lineStrandData <- function( stackedFragment, fragSet, adjustment, plot_title, xlim,
     PET, extension=1, smoothing=FALSE ) { 
-    
     xvar <- stackedFragment[,1]
     
     # forward strand
@@ -80,28 +79,28 @@
         
     if ( smoothing ) {
         
-        if ( length(yvarF) > 0 ) {
+        if ( length(yvarF) > 1 ) {
             smoothF <- smooth.spline( xvar, yvarF * adjustment )
         }
-        if ( length(yvarR) > 0 ) {
+        if ( length(yvarR) > 1 ) {
             smoothR <- smooth.spline( xvar, yvarR * adjustment )
         }
         
-        if ( length(yvarF) > 0 & length(yvarR) > 0 ) {
+        if ( length(yvarF) > 1 & length(yvarR) > 1 ) {
             lines( smoothF, col="black", lty=2 )
             lines( smoothR, col="red", lty=2 )
-        } else if ( length(yvarF) > 0 ) {
+        } else if ( length(yvarF) > 1 ) {
             lines( smoothF, col="black", lty=2 )
-        } else if ( length(yvarR) > 0 ) {
+        } else if ( length(yvarR) > 1 ) {
             lines( smoothR, col="red", lty=2 )
         }
     } else {
-        if ( length(yvarF) > 0 & length(yvarR) > 0 ) {
+        if ( length(yvarF) > 1 & length(yvarR) > 1 ) {
             lines( xvar, yvarF * adjustment, col="black", lty=2 )
             lines( xvar, yvarR * adjustment, col="red", lty=2 )
-        } else if ( length(yvarF) > 0 ) {
+        } else if ( length(yvarF) > 1 ) {
             lines( xvar, yvarF * adjustment, col="black", lty=2 )
-        } else if ( length(yvarR) > 0 ) {
+        } else if ( length(yvarR) > 1 ) {
             lines( xvar, yvarR * adjustment, col="red", lty=2 )
         }
     }       

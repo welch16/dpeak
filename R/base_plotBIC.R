@@ -1,6 +1,7 @@
 # GOF plot
 
 .plotBIC <- function( object ) {
+
     
     maxComp <- object@maxComp
     
@@ -18,13 +19,12 @@
     }
     
     # GOF plot
-    
     for ( i in 1:length(object@stackedFragment) ) {   
         # error treatment: skip peaks with no fragments
         
         # flag if there are no reads in the peak region
         
-        if ( is.na(object@fragSet[[i]][1,1]) ) {        
+        if ( is.null(object@fragSet[[i]]) ) {        
             par( mfrow=c(1,1) )
             
             plot_title <- paste(object@peakChr[i],": ",

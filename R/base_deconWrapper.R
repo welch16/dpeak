@@ -4,11 +4,12 @@
     psize=21, max_comp=5, pConst=0.2,
     seed=12345, niter_init=25, niter_gen=25, 
     PET, L_table=NA, Fratio=0.5, aveFragLen=NA, stop_eps=1e-6, verbose=FALSE ) {
-    
+
     frag <- fData$frag
     peak <- fData$peak
     
-    if ( is.na(frag[1,1]) ) {
+    ##if ( is.na(frag[1,1]) ) {
+    if(is.null(frag)){
     #if ( nrow(frag) == 0 ) {
         # if peak has no fragment, skip the model fitting
         
@@ -16,19 +17,25 @@
         success <- FALSE
     } else {           
         # starting & end positions of each peak
+        ## S <- frag[,1]                   
+        S <- start(frag)
+        ## E <- frag[,2]
+        E <- end(frag)
         
-        S <- frag[,1]
-        E <- frag[,2]
         midp <- ( S + E ) / 2
         
         if ( PET == FALSE ) {
             # SET
             
-            strand <- frag[,3]
-            N <- nrow(frag)
+            ## strand <- frag[,3]
+            strand <- as.character(strand(frag))
+            ## N <- nrow(frag)
+            N <- length(frag)
             
-            locF <- which( strand=="F" )
-            locR <- which( strand=="R" )
+            ## locF <- which( strand=="F" )
+            ## locR <- which( strand=="R" )
+            locF <- which(strand == "+")
+            locR <- which(strand == "-")
             FRvec <- rep( 1, N )
             FRvec[ locF ] <- Fratio
             FRvec[ locR ] <- 1 - Fratio

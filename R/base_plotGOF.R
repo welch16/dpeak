@@ -21,7 +21,8 @@
     for ( i in 1:length(object@optMu) ) {
         # error treatment: skip peaks with no fragments
         
-        if ( is.na(object@fragSet[[i]][1,1]) ) {
+        ## if ( is.na(object@fragSet[[i]][1,1]) ) {
+        if ( is.null(object@fragSet[[i]])) {
             optList[[i]] <- matrix( NA )
         } else {        
             # stack info
@@ -32,8 +33,10 @@
             optList_i$mu <- object@optMu[[i]]
             optList_i$pi <- object@optPi[[i]]
             optList_i$pi0 <- object@optPi0[[i]]
-            optList_i$minS <- min(object@stackedFragment[[i]][,1])
-            optList_i$maxS <- max(object@stackedFragment[[i]][,1])
+            stackedFragment <- object@stackedFragment[[i]]
+            xval <- cumsum(stackedFragment[[3]][[1]])  + stackedFragment[[1]] -1           
+            optList_i$minS <- min(xval)
+            optList_i$maxS <- max(xval)
             optList_i$peakstart <- peakStart[i]
             optList_i$peakend <- peakEnd[i]
             if ( PET == FALSE ) {
@@ -43,6 +46,7 @@
             optList[[i]] <- optList_i
         }
     }
+
     
     if ( PET ) {
         Lvalue <- as.numeric(as.vector(names(fragLenTable)))
@@ -52,6 +56,7 @@
     # generate fragments (using parallel computing, if parallel exists)
     
     message( "Info: Generating simulated fragments from the fitted model..." )
+
     
     if ( is.element( "parallel", installed.packages()[,1] ) ) {
         # if "parallel" package exists, utilize parallel computing with "mclapply"
@@ -82,7 +87,6 @@
     # GOF plot
     
     message( "Info: Generating GOF plots..." )
-    
     for ( i in 1:length(object@stackedFragment) ) {   
             
         plot_title <- paste(object@peakChr[i],": ",
@@ -90,7 +94,7 @@
         
         # flag if there are no reads in the peak region
         
-        if ( is.na(object@fragSet[[i]][1,1]) ) {
+        if ( is.null(object@fragSet[[i]]) ) {
                 
             plot( 0, 0, type="n", xlab="", ylab="", axes=FALSE,
                 main=plot_title, xlim=c(-5,5), ylim=c(-5,5) )    
@@ -103,13 +107,13 @@
         
         stackedSimFrag <- simList[[i]]$stackedFragment
         
-        xlim <- rep( NA, 2 )
-        xlim[1] <- min( object@peakStart[i], object@stackedFragment[[i]][,1], 
+        xlim <- rep( NA, 2 )        
+        xlim[1] <- min( object@peakStart[i], object@stackedFragment[[i]][[1]], 
             stackedSimFrag[,1] )
-        xlim[2] <- max( object@peakEnd[i], object@stackedFragment[[i]][,1], 
+        xlim[2] <- max( object@peakEnd[i], object@stackedFragment[[i]][[2]], 
             stackedSimFrag[,1] )
         
-        if ( PET == FALSE ) {        
+        if ( PET == FALSE ) {
             .plotStrandData( stackedFragment=object@stackedFragment[[i]],
                 fragSet=object@fragSet[[i]], plot_title=plot_title, xlim=xlim,
                 PET=PET, extension=extension, smoothing=smoothing )
@@ -156,7 +160,7 @@
         } else {
             # SET
             
-            ratio <- max(object@stackedFragment[[i]][,2]) /
+            ratio <- max(object@stackedFragment[[i]][[3]][[2]]) /
                 max(stackedSimFrag[,2])
                   
             .lineStrandData( stackedFragment=stackedSimFrag,

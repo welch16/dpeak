@@ -50,7 +50,9 @@ setMethod(
     definition=function( x, y, filename=NULL, plotType="fit", 
         strand=FALSE, extension=1, smoothing=FALSE,
         threshold=1000, nsimul=10000, seed=12345, nCore=8, ... ) {      
-        
+
+      browser()
+      
         pdf( filename )
         
         if ( plotType == "fit" ) {
@@ -88,7 +90,7 @@ setMethod(
     signature="DpeakFit",
     definition=function( object, type=NA, filename=NA, ... ) {
         # error treatment: check invalid type
-        
+         
         if ( is.na(type) )
         {
             message( "Info: 'type' is not specified by the user." )
@@ -139,7 +141,8 @@ setMethod(
             # error treatment: skip peaks with no fragments
             
             #if ( any(is.na(optMu[[i]])) ) {
-            if ( is.na(object@fragSet[[i]][1,1]) ) {
+            ## if ( is.na(object@fragSet[[i]][1,1]) ) {
+            if(is.null(object@fragSet[[i]])){
                 next;
             }
             
@@ -148,10 +151,11 @@ setMethod(
             chrVec <- c( chrVec, rep( peakChr[i], length(optMu[[i]]) ) )
             muVec <- c( muVec, optMu[[i]] )
             #piVec <- c( piVec, 1000 * optPi[[i]] )
-            strengthVec <- c( strengthVec, nrow(object@fragSet[[i]]) * optPi[[i]] )
+            ## strengthVec <- c( strengthVec, nrow(object@fragSet[[i]]) * optPi[[i]] )
+            strengthVec <- c( strengthVec, length(object@fragSet[[i]]) * optPi[[i]] )
             nameVec <- c( nameVec, rep( peakName[i], length(optMu[[i]]) ) )
         }
-        
+
         # export peak lists 
         
         message( "Info: Exporting the binding site list..." )

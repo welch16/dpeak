@@ -79,6 +79,7 @@ setMethod(
             dataObj[[i]]$frag <- object@fragSet[[i]]
             dataObj[[i]]$peak <- c( object@peakStart[i], object@peakEnd[i] )
         }
+
         
         # deconvolve all peaks (using parallel computing, if parallel exists)
         
@@ -102,14 +103,15 @@ setMethod(
                     seed=seed, niter_init=iterInit, niter_gen=iterMain, 
                     PET=PET, L_table=L_table, Fratio=Fratio, aveFragLen=aveFragLen,
                     stop_eps=epsilon, verbose=verbose ) 
-                } )
+
+              } )
         }    
         
         rm( dataObj )
         gc()
         
         # select optimal model
-        
+
         fits <- vector( "list", length(object@fragSet) )
         optFit <- optMu <- optPi <- optPi0 <- 
             optGamma <- optDelta <- optSigma <- bicVec <- aicVec <-
@@ -140,15 +142,17 @@ setMethod(
         
         # summary
         
-        new( "DpeakFit",
-            fits=fits, optFit=optFit, optMu=optMu, optPi=optPi, optPi0=optPi0, 
-            optGamma=optGamma, optDelta=optDelta, optSigma=optSigma,
-            bicVec=bicVec, aicVec=aicVec, fragSet=object@fragSet, PET=object@PET, 
+        new( "DpeakFit", fits=fits, optFit=optFit, optMu=optMu,
+            optPi=optPi, optPi0=optPi0, optGamma=optGamma,
+            optDelta=optDelta, optSigma=optSigma, bicVec=bicVec,
+            aicVec=aicVec, fragSet=object@fragSet, PET=object@PET,
             fragLenTable=object@fragLenTable, Fratio=object@Fratio,
-            aveFragLen=object@aveFragLen, stackedFragment=object@stackedFragment,
-            peakChr=object@peakChr, peakStart=object@peakStart, peakEnd=object@peakEnd,
-            estDelta=estDelta, lbDelta=lbDelta, lbSigma=lbSigma,
-            psize=psize, maxComp=maxComp, pConst=pConst,
-            iterInit=iterInit, iterMain=iterMain, epsilon=epsilon )
+            aveFragLen=object@aveFragLen,
+            stackedFragment=object@stackedFragment,
+            peakChr=object@peakChr, peakStart=object@peakStart,
+            peakEnd=object@peakEnd, estDelta=estDelta,
+            lbDelta=lbDelta, lbSigma=lbSigma, psize=psize,
+            maxComp=maxComp, pConst=pConst, iterInit=iterInit,
+            iterMain=iterMain, epsilon=epsilon )
     }
 )

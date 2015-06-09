@@ -16,15 +16,16 @@
     }
     
     # plot
-    
     for ( i in 1:length(object@stackedFragment) ) {    
     
         plot_title <- paste(object@peakChr[i],": ",object@peakStart[i],"-",object@peakEnd[i],sep="")
     
         # flag if there are no reads in the peak region
         
-        if ( is.na(object@fragSet[[i]][1,1]) ) {
-                
+        ## if ( is.na(object@fragSet[[i]][1,1]) ) {
+        if ( is.null(object@fragSet[[i]]) ) {
+
+        
             plot( 0, 0, type="n", xlab="", ylab="", axes=FALSE,
                 main=plot_title, xlim=c(-5,5), ylim=c(-5,5) )    
             text( 0, 0, "No fragment (read) in the peak region" )
@@ -35,11 +36,13 @@
         # plot
             
         xlim <- rep( NA, 2 )
-        xlim[1] <- min( object@peakStart[i], object@stackedFragment[[i]][,1] )
-        xlim[2] <- max( object@peakEnd[i], object@stackedFragment[[i]][,1] )
+        xlim[1] <- min( object@peakStart[i], object@stackedFragment[[i]][[1]] )
+        xlim[2] <- max( object@peakEnd[i], object@stackedFragment[[i]][[2]] )
         
-        Ni <- nrow(object@fragSet[[i]])
-            
+        ## Ni <- nrow(object@fragSet[[i]])
+        Ni <- length(object@fragSet[[i]])
+        
+        
         if ( strand==TRUE ) {
             
             .plotStrandData( stackedFragment=object@stackedFragment[[i]],
@@ -63,11 +66,36 @@
             }
         } else {
             # combined
+
+            ## plot( object@stackedFragment[[i]][,1], object@stackedFragment[[i]][,2], type="l", 
+            ##     xlab="Genomic coordinates", ylab="Frequency",
+            ##     main=plot_title, 
+            ##     xlim=xlim, ylim=c(0,max(object@stackedFragment[[i]][,2])*1.2) )
+
+            stackedFragment <- object@stackedFragment[[i]]
+            xval <- cumsum(stackedFragment[[3]][[1]])  + stackedFragment[[1]] -1
+            yval <- stackedFragment[[3]][[2]]
+            if(xlim[1] < min(xval)){
+              xval <- c(xlim[1],xval)
+              yval <- c(0,yval)
+            }
+            if(xlim[2] > max(xval)){
+              xval <- c(xval,xlim[2])
+              yval <- c(yval,0)
+            }
+            x <- xlim[1]:xlim[2]
+            y <- stepfun(xval,c(yval,0))(x)
+
             
-            plot( object@stackedFragment[[i]][,1], object@stackedFragment[[i]][,2], type="l", 
+            ## plot( object@stackedFragment[[i]][,1], object@stackedFragment[[i]][,2], type="l", 
+            ##     xlab="Genomic coordinates", ylab="Frequency",
+            ##     main=plot_title, 
+            ##     xlim=xlim, ylim=c(0,max(object@stackedFragment[[i]][,2])*1.2) )
+            plot( x , y , type="l", 
                 xlab="Genomic coordinates", ylab="Frequency",
                 main=plot_title, 
-                xlim=xlim, ylim=c(0,max(object@stackedFragment[[i]][,2])*1.2) )            
+                xlim=xlim, ylim=c(0,max(y)*1.2) )            
+            
                 
             legend( "topright", lty=c(1,2,2), lwd=c(1,2,2),
                 col=c("black","blue","lightblue"), 

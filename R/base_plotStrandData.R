@@ -1,20 +1,39 @@
 # plot fitting results
 
 .plotStrandData <- function( stackedFragment, fragSet, plot_title, xlim,
-    PET, extension=1, smoothing=FALSE ) { 
+    PET, extension=1, smoothing=FALSE ) {
+
+   xvar <- xlim[1]:xlim[2]
+   ## xvar <- stackedFragment[,1]
     
-    xvar <- stackedFragment[,1]
+
+   ## xval <- cumsum(stackedFragment[[3]][[1]])  + stackedFragment[[1]] -1
+   ##          yval <- stackedFragment[[3]][[2]]
+   ##          if(xlim[1] < min(xval)){
+   ##            xval <- c(xlim[1],xval)
+   ##            yval <- c(0,yval)
+   ##          }
+   ##          if(xlim[2] > max(xval)){
+   ##            xval <- c(xval,xlim[2])
+   ##            yval <- c(yval,0)
+   ##          }
+   ##          x <- xlim[1]:xlim[2]
+   ##          y <- stepfun(xval,c(yval,0))(x)
+
     
     # forward strand
-        
+
     if ( PET == FALSE ) {
         # SET
         
-        indF <- which( fragSet[,3] == "F" )
+        ## indF <- which( fragSet[,3] == "F" )
+        indF <- which(strand(fragSet) == "+")
         
         if ( length(indF) > 0 ) {                
-            Fstart <- fragSet[ indF, 1 ]
-            Fend <- pmin( fragSet[ indF, 1 ] + extension - 1, max(xvar) )
+            ## Fstart <- fragSet[ indF, 1 ]
+            ## Fend <- pmin( fragSet[ indF, 1 ] + extension - 1, max(xvar) )
+          Fstart <- start(fragSet)[indF]
+          Fend <- pmin(Fstart + extension -1,max(xvar))
                 
             xvarq <- c( min(Fstart), max(Fend) )
             xvar_org <- c(xvarq[1]:xvarq[2])
@@ -27,9 +46,9 @@
         }
     } else {
         # PET
-        
-        Fstart <- fragSet[,1]
-        Fend <- pmin( fragSet[,1] + extension - 1, max(xvar) )
+      #### need to fix this  
+        Fstart <- start(fragSet)
+        Fend <- pmin( start(fragSet) + extension - 1, max(xvar) )
                 
         xvarq <- c( min(Fstart), max(Fend) )
         xvar_org <- c(xvarq[1]:xvarq[2])
@@ -44,13 +63,15 @@
     if ( PET == FALSE ) {
         # SET
         
-        if ( nrow(fragSet) - length(indF) > 0 ) {
+        if ( length(fragSet) - length(indF) > 0 ) {
             if ( length(indF) > 0 ) {
-                Rstart <- pmax( fragSet[ -indF, 2 ] - extension + 1, min(xvar) )
-                Rend <- fragSet[ -indF, 2 ]
+                ## Rstart <- pmax( fragSet[ -indF, 2 ] - extension + 1, min(xvar) )
+                ## Rend <- fragSet[ -indF, 2 ]
+                Rstart <- pmax( end(fragSet)[ -indF ] - extension + 1, min(xvar) )
+                Rend <- end(fragSet)[-indF]       
             } else {
-                Rstart <- pmax( fragSet[ , 2 ] - extension + 1, min(xvar) )
-                Rend <- fragSet[ , 2 ]
+                Rstart <- pmax( end(fragSet) - extension + 1, min(xvar) )
+                Rend <- end(fragSet)
             }
                 
             xvarq <- c( min(Rstart), max(Rend) )
@@ -64,9 +85,9 @@
         }
     } else {
         # PET
-        
-        Rstart <- pmax( fragSet[,2] - extension + 1, min(xvar) )
-        Rend <- fragSet[,2]
+        #### this too
+        Rstart <- pmax( end(fragSet)- extension + 1, min(xvar) )
+        Rend <- end(fragSet)
                 
         xvarq <- c( min(Rstart), max(Rend) )
         xvar_org <- c(xvarq[1]:xvarq[2])
@@ -79,7 +100,6 @@
     # plot
         
     if ( smoothing ) {
-        
         if ( length(yvarF) > 0 ) {
             smoothF <- smooth.spline( xvar, yvarF )
         }
