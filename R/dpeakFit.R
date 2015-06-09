@@ -9,7 +9,6 @@ setMethod(
         nCore=8, verbose=FALSE, seed=12345, iterInit=50, iterMain=25, epsilon=1e-6 )
     {    
         # safe guard: iterInit, iterMain
-        
         if ( iterInit < 2 ) {
             message( "Info: 'iterInit' should be larger than or equal to 2. 'iterInit' is set to 2." )
             iterInit <- 2
@@ -75,14 +74,14 @@ setMethod(
         
         dataObj <- vector( "list", length(object@fragSet) )
         for ( i in 1:length(object@fragSet) ) {
-            dataObj[[i]] <- list()
-            dataObj[[i]]$frag <- object@fragSet[[i]]
-            dataObj[[i]]$peak <- c( object@peakStart[i], object@peakEnd[i] )
+          dataObj[[i]] <- list()
+          dataObj[[i]]$frag <- object@fragSet[[i]]
+          dataObj[[i]]$peak <- c( object@peakStart[i], object@peakEnd[i] )
         }
 
         
         # deconvolve all peaks (using parallel computing, if parallel exists)
-        
+
         if ( is.element( "parallel", installed.packages()[,1] ) ) {
             # if "parallel" package exists, utilize parallel computing with "mclapply"
             library(parallel)
@@ -93,7 +92,7 @@ setMethod(
                     seed=seed, niter_init=iterInit, niter_gen=iterMain, 
                     PET=PET, L_table=L_table, Fratio=Fratio, aveFragLen=aveFragLen,
                     stop_eps=epsilon, verbose=verbose ) 
-                }, mc.cores = nCore )
+                }, mc.cores = nCore ,mc.preschedule = TRUE)
         } else {
             # otherwise, use usual "lapply"
             

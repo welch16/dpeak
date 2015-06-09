@@ -14,9 +14,8 @@ setMethod(
         aveFragLen <- object@aveFragLen
         
         # summary
-        
         nFrag <- unlist( lapply( object@fragSet, 
-            function(x) ifelse( !is.null(x), nrow(x), 0 )
+            function(x) ifelse( !is.null(x), length(x), 0 )
          ) )
         sumRead <- sum( nFrag )
         medNumRead <- median( nFrag )

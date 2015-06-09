@@ -6,8 +6,6 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     parallel=FALSE, nCore=8, tempDir=NULL, perl="perl" )
 {            
     # process aligned read file
-
-    ## browser()
     
     if ( PET ) {
         message( "Info: Paired-end tag (PET) is assumed (PET=TRUE)." )
@@ -64,7 +62,7 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     #print( Sys.time() )
     
     # match chromosomes between peak list and reads
-    
+
     peakByChr <- split( peakSet[ , 2:3, drop=FALSE ], peakSet[,1] )
     peakChr <- names(peakByChr)
 
@@ -183,7 +181,7 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     
     if ( PET ) {
         message( "Info: Calculating distribution of fragment length..." )
-        
+        fragLen <- do.call(c,lapply(readData$fragSet,width))
         fragLenTable <- table( fragLen )
         aveFragLen <- median( fragLen )
     } else {    
@@ -211,7 +209,8 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     cat( "Info: Preprocessing summary\n" )
     cat( "------------------------------------------------------------\n" )
     cat( "Tag type: ",ifelse(PET,"PET","SET"),"\n", sep="" )
-    cat( "Number of chromosomes: ",length(peakChr),"\n", sep="" )
+    cat( "Number of chromosomes: ",length(unique(peakChr)),"\n", sep="" )
+    ## cat( "Number of chromosomes: ",length(peakChr),"\n", sep="" )
     cat( "Number of peaks: ",nPeak,"\n", sep="" )
     cat( "Number of peaks without reads: ",nEmpty,"\n", sep="" )
     cat( "[Note] Use 'printEmpty' method to check the list.\n" )
