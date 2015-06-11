@@ -1,7 +1,13 @@
 useDynLib(dpeak,.registration=TRUE)
 exportPattern("^[[:alpha:]]+")
 
-import( methods, graphics, Rcpp, MASS, IRanges )
+importFrom( Rcpp, evalCpp )
+
+
+import( methods, graphics, MASS, IRanges,
+       BSgenome,GenomicRanges,
+       GenomicAlignments, Rsamtools,
+       GenomeInfoDb, S4Vectors )
 
 export( dpeakRead, dpeakFit )
 
