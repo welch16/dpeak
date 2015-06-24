@@ -1,7 +1,7 @@
 Package: dpeak
 Type: Package
 Title: dPeak (Deconvolution of Peaks in ChIP-seq Analysis)
-Version: 2.0.3
+Version: 2.0.2
 Depends: R (>= 2.11.1), methods, graphics, Rcpp
 Imports: MASS, IRanges, BSgenome, GenomicRanges,
         GenomicAlignments, Rsamtools, GenomeInfoDb, S4Vectors
