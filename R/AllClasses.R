@@ -62,7 +62,7 @@ setClass( Class="DpeakFit",
         peakEnd="numeric",
         
         estDeltaSigma="character",
-		nTop="numeric",
+        nTop="numeric",
         lbDelta="numeric",
         lbSigma="numeric",
         psize="numeric",
