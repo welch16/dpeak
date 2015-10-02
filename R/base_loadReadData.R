@@ -5,7 +5,7 @@
   fileFormat=NULL, PET=FALSE, fragLen=200, keepReads=FALSE,
   parallel=FALSE, nCore=8, tempDir=NULL, perl="perl" )
 { 
-  
+
   # process aligned read file
   
   if ( PET ) {
@@ -185,11 +185,11 @@
 	  param <- ScanBamParam( which=peakgrExt )
     
 	  if ( PET == FALSE ) {
-		  suppressWarnings( greads <- readGAlignmentsFromBam( readfile, param = param, use.names = FALSE ) )
+		  suppressWarnings( greads <- readGAlignments( readfile, param = param, use.names = FALSE ) )
 		  suppressWarnings( greads <- as( greads, "GRanges" ) )
 		  suppressWarnings( greads <- resize( greads, fragLen ) )
 	  } else {
-		  suppressWarnings( greads <- readGAlignmentPairsFromBam( readfile, param = param ) )
+		  suppressWarnings( greads <- readGAlignmentPairs( readfile, param = param ) )
                   snms = seqnames(greads)
                   starts = start(left(greads))
                   ends = end(right(greads))
@@ -214,7 +214,7 @@
     seqDepth <- countBam(readfile)$records
 
   }
-    
+      
   # match reads with peaks & calculate coverage
   
   message( "Info: Processing and combining peak list and reads..." )    
@@ -255,7 +255,8 @@
 
   rm( greads )
   gc()
-  
+
+   
   # flatten reads to match them to peak list for easier processing in later steps
 
   if ( parallel == TRUE ) {
@@ -280,10 +281,10 @@
   # calculate coverage
   
   message( "Info: Calculating coverage..." )    
-  
+
   if ( parallel == TRUE ) {
     stackedFragment <- mclapply( fragSet, function(fragEach) {
-      outmat <- vector( "list", 3 )
+      #outmat <- vector( "list", 3 )
       
       if ( length(fragEach) > 0 ) {
         fragmat <- cbind( start(fragEach), end(fragEach) )
@@ -291,18 +292,19 @@
         xvar <- c(xvarq[1]:xvarq[2])
         yvar <- .ff_stack( fragmat[,1], fragmat[,2], xvarq[1], xvarq[2] )  
         #outmat <- cbind( xvar, yvar )
-        outmat[[1]] <- min(xvar)
-        outmat[[2]] <- max(xvar)
-        outmat[[3]] <- rle(yvar)
+        outmat <- as.matrix(data.frame(xvar,yvar))
+        ## outmat[[1]] <- min(xvar)
+        ## outmat[[2]] <- max(xvar)
+        ## outmat[[3]] <- rle(yvar)        
       } else {
-        #outmat <- matrix( NA )
-        outmat[[1]] <- outmat[[2]] <- outmat[[3]] <- NA
+        outmat <- matrix( NA )
+        ## outmat[[1]] <- outmat[[2]] <- outmat[[3]] <- NA
       }
       return( outmat )
     }, mc.cores = nCore )
   } else {
     stackedFragment <- lapply( fragSet, function(fragEach) {
-      outmat <- vector( "list", 3 )
+      # outmat <- vector( "list", 3 )      
       
       if ( length(fragEach) > 0 ) {
         fragmat <- cbind( start(fragEach), end(fragEach) )
@@ -310,12 +312,13 @@
         xvar <- c(xvarq[1]:xvarq[2])
         yvar <- .ff_stack( fragmat[,1], fragmat[,2], xvarq[1], xvarq[2] )  
         #outmat <- cbind( xvar, yvar )
-        outmat[[1]] <- min(xvar)
-        outmat[[2]] <- max(xvar)
-        outmat[[3]] <- rle(yvar)
+        outmat <- as.matrix(data.frame(xvar,yvar))
+        ##outmat[[1]] <- min(xvar)
+        ##outmat[[2]] <- max(xvar)
+        ##outmat[[3]] <- rle(yvar)
       } else {
-        #outmat <- matrix( NA )
-        outmat[[1]] <- outmat[[2]] <- outmat[[3]] <- NA
+        outmat <- matrix( NA )
+        #outmat[[1]] <- outmat[[2]] <- outmat[[3]] <- NA
       }
       return( outmat )
     } )
