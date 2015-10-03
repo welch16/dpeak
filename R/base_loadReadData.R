@@ -324,6 +324,27 @@
     } )
   }
   names(stackedFragment) <- names(fragSet)
+
+  if( parallel == TRUE){
+    fragSet <- mclapply(fragSet,function(x){
+      if(length(x) > 0){
+        out <- data.frame(start = start(x),end = end(x),
+          str = ifelse(as.character(strand(x)) == "+","F","R"))
+      }else{
+        out <- NA
+      }                       
+      return(out)},mc.cores = nCore)
+  }else{
+    fragSet <- lapply(fragSet,function(x){
+      if(length(x) > 0){
+        out <- data.frame(start = start(x),end = end(x),
+          str = ifelse(as.character(strand(x)) == "+","F","R"))
+      }else{
+        out <- NA
+      }                       
+      return(out)})
+  }
+
   
   gc()
   

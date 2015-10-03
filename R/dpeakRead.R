@@ -29,6 +29,7 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     baseData <- .loadReadData(peakfile , readfile = readfile , fileFormat = fileFormat,keepReads = TRUE,
       PET = PET,fragLen = fragLen, parallel = parallel,nCore = nCore, tempDir = tempDir,
       perl = perl)
+
                         
     ## .constructExtRead( infile=readfile, outfile=tempfileName[1],
     ##     summaryfile=tempfileName[2], fileFormat=fileFormat, 
@@ -117,14 +118,15 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     ## nEmpty <- 0
     ## emptyList <- c()
     ## cur <- 1
+
     
     if ( PET == FALSE ) {
       nAll <- numReads
       if(parallel == TRUE){
-        nF <- mclapply(fragSet,function(x)summary(runValue(strand(x)))["+"],
+        nF <- mclapply(fragSet,function(x)table(x$str)["F"],
             mc.cores = nCore)
       }else{
-        nF <- lapply(fragSet,function(x)summary(runValue(strand(x)))["+"])
+        nF <- lapply(fragSet,function(x)table(x$str)["F"])        
       }     
     }
     
