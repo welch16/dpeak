@@ -10,8 +10,6 @@ setMethod("dpeakFit",
   {
   # use motif information for initialization?
 
-  browser()
-
   if ( !is.null(objectMotif) ) {
     message( "Info: positions of binding events are initialized using sequence information." )
   }
@@ -87,6 +85,9 @@ setMethod("dpeakFit",
     L_table <- NA
     aveFragLen <- object@aveFragLen
   }
+
+
+  
   Fratio <- object@Fratio
   
   # estimation of common peak shape
@@ -115,7 +116,6 @@ setMethod("dpeakFit",
       }
     }
 			
-    browser()
     # deconvolve top candidate regions (using parallel computing, if parallel exists)
 			
     if ( is.element( "parallel", installed.packages()[,1] ) ) {

@@ -8,27 +8,29 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     # process aligned read file
     
     if ( PET ) {
-        message( "Info: Paired-end tag (PET) is assumed (PET=TRUE)." )
+      message( "Info: Paired-end tag (PET) is assumed (PET=TRUE)." )
     } else {
-        message( "Info: Single-end tag (SET) is assumed (PET=FALSE)." )
-        message( "Info: Average fragment length is set as ",fragLen," (fragLen=",fragLen,")." )
+      message( "Info: Single-end tag (SET) is assumed (PET=FALSE)." )
+      message( "Info: Average fragment length is set as ",fragLen," (fragLen=",fragLen,")." )
     }
+
     #print( Sys.time() )
     
     message( "Info: Reading and processing aligned read file..." )
     
     if ( is.null(tempDir) ) {
-        tempfileName <- tempfile( c("output","summary") )
+      tempfileName <- tempfile( c("output","summary") )
     } else {
-        tempfileName <- c( paste(tempDir,"output.txt",sep=""),
-            paste(tempDir,"summary.txt",sep="") )
+      tempfileName <- c( paste(tempDir,"output.txt",sep=""),
+                        paste(tempDir,"summary.txt",sep="") )
     }
 
     # intermediate file name
 
-    baseData <- .loadReadData(peakfile , readfile = readfile , fileFormat = fileFormat,keepReads = TRUE,
-      PET = PET,fragLen = fragLen, parallel = parallel,nCore = nCore, tempDir = tempDir,
-      perl = perl)
+    baseData <- .loadReadData(peakfile , readfile = readfile ,
+        fileFormat = fileFormat,keepReads = TRUE,
+        PET = PET,fragLen = fragLen, parallel = parallel,nCore = nCore, tempDir = tempDir,
+        perl = perl)
 
                         
     ## .constructExtRead( infile=readfile, outfile=tempfileName[1],
@@ -109,9 +111,9 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
 
     nEmpty <- length(idx)
     if ( nEmpty == 0 ) {
-        emptyList <- ""
-    }else{   
-        emptyList <- names(idx)
+      emptyList <- ""
+    }else{
+      emptyList <- names(idx)
     }
     
     
@@ -163,12 +165,12 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     #print( Sys.time() )
         
     # check proportion of forward reads for SET data
-    
+
     if ( PET == TRUE ) {
         Fratio <- 0.5
     } else {
       nF <- do.call(c,nF)
-      Fratio <- sum(nF) / sum(nAll)
+      Fratio <- sum(nF,na.rm = TRUE) / sum(nAll)
     }
     
     # stack fragment (projection to coordinates)
