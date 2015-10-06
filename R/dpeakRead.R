@@ -26,7 +26,6 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
     }
 
     # intermediate file name
-
     baseData <- .loadReadData(peakfile , readfile = readfile ,
         fileFormat = fileFormat,keepReads = TRUE,
         PET = PET,fragLen = fragLen, parallel = parallel,nCore = nCore, tempDir = tempDir,
@@ -90,14 +89,14 @@ dpeakRead <- function( peakfile=NULL, readfile=NULL,
 
     idx <- which(numReads == 0)
 
-    fragSet <- fragSet[-idx]
-    numReads <- numReads[-idx]
-    stackedFragment <- stackedFragment[-idx]
-    
+    if(length(idx) > 0){
+      fragSet <- fragSet[-idx]
+      numReads <- numReads[-idx]
+      stackedFragment <- stackedFragment[-idx]
+    }
          
     ##fragSet <- vector( "list", nPeak )
     #peakChr <- peakStart <- peakEnd <- rep( NA, nPeak )
-
 
     nameVec <- names(fragSet)
     sep_names <- strsplit(nameVec,":")

@@ -70,7 +70,7 @@
   nameVecChr <- split( nameVecAll, peakList[,1] )
   
   # construct GRanges for peak list, while extending boundaries little bit for safety
-
+  
   peakgr <- GRanges( 
     seqnames = Rle(peakList[,1]), 
     ranges = IRanges( start=peakList[,2], end=peakList[,3], names=nameVecAll ),
